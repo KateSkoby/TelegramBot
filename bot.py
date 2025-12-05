@@ -1,3 +1,4 @@
+from telebot import TeleBot
 import telebot
 from telebot import types
 import datetime
