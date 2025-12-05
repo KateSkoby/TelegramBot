@@ -1665,7 +1665,7 @@ def webhook():
 # Эндпоинт для установки webhook (вызывается один раз при деплое)
 @app.route("/set_webhook")
 def set_webhook():
-    render_url = os.environ.get("RENDER_EXTERNAL_URL", "https://localhost:10000")
+    render_url = os.environ.get("RENDER_EXTERNAL_URL", "https://telegrambot-9s8l.onrender.com")
     webhook_url = f"{render_url}/{BOT_TOKEN}"
     result = bot.set_webhook(url=webhook_url)
     return f"Webhook set: {result}, URL: {webhook_url}"
