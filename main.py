@@ -53,6 +53,10 @@ except Exception as e:
     logger.error(f"Ошибка инициализации бота: {e}")
     raise
 
+print("BOT_TOKEN:", os.environ.get('BOT_TOKEN'))
+print("OPENWEATHER_API_KEYS:", os.environ.get('OPENWEATHER_API_KEYS'))
+print("NEWS_API:", os.environ.get('NEWS_API'))
+
 # API ключи для сервисов
 WEATHER_API_KEYS = os.environ.get('OPENWEATHER_API_KEYS').split(',')
 WEATHER_API_KEYS = [key.strip() for key in WEATHER_API_KEYS if key.strip()]
@@ -524,7 +528,7 @@ def get_weather(city="Moscow", is_default_city=False):
 
 
 # Функция получения новостей с обработкой ошибок
-def get_news(WHEATER_API, lang="ru", max_articles=1):
+def get_news(api_key=NEWS_API, lang="ru", max_articles=1):
     try:
         base_url = "https://gnews.io/api/v4/top-headlines"
         params = {
@@ -1686,7 +1690,3 @@ if __name__ == "__main__":
 
     port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port)
-
-
-if __name__ == "__main__":
-    main()
