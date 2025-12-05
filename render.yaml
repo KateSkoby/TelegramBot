@@ -1,0 +1,10 @@
+# render.yaml
+services:
+  - type: web
+    name: my-telegram-bot
+    runtime: python
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python main.py"
