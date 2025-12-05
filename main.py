@@ -15,8 +15,12 @@ import sys
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+from flask import Flask, request
 from dotenv import load_dotenv
 load_dotenv()  # загружает переменные из .env
+
+# Создаём Flask-приложение
+app = Flask(__name__)
 
 # Настройка логирования
 logging.basicConfig(
@@ -1641,25 +1645,47 @@ def run_scheduler():
         logger.error(f"Ошибка при запуске планировщика: {e}")
 
 
-def main():
+# Webhook endpoint — сюда Telegram будет присылать обновления
+@app.route('/' + BOT_TOKEN, methods=['POST'])
+def webhook():
+    if request.headers.get('content-type') == 'application/json':
+        json_string = request.get_data().decode('utf-8')
+        update = telebot.types.Update.de_json(json_string)
+        bot.process_new_updates([update])
+        return 'OK', 200
+    else:
+        from flask import abort
+        abort(403)
+
+# Эндпоинт для установки webhook (вызывается один раз при деплое)
+@app.route("/set_webhook")
+def set_webhook():
+    render_url = os.environ.get("RENDER_EXTERNAL_URL", "https://localhost:10000")
+    webhook_url = f"{render_url}/{BOT_TOKEN}"
+    result = bot.set_webhook(url=webhook_url)
+    return f"Webhook set: {result}, URL: {webhook_url}"
+
+# Убедитесь, что run_scheduler() НЕ содержит бесконечный цикл в основном потоке
+# А использует отдельный поток, как в исходном коде:
+
+def run_scheduler():
     try:
-        # Инициализируем базу данных
-        init_database()
-
-        # Добавляем недостающие колонки, если нужно
-        add_missing_columns()
-
-        # Запускаем планировщик
-        run_scheduler()
-
-        # Запускаем бота
-        logger.info("Бот запущен и готов к работе")
-        bot.polling(none_stop=True, interval=1, timeout=60)
+        schedule.every().minute.at(":00").do(send_scheduled_messages)
+        schedule_thread = threading.Thread(target=schedule_checker, daemon=True)
+        schedule_thread.start()
+        logger.info("Планировщик успешно запущен")
     except Exception as e:
-        logger.critical(f"Критическая ошибка: {e}")
-        traceback.print_exc()
-        time.sleep(10)
-        main()  # Перезапускаем основную функцию
+        logger.error(f"Ошибка при запуске планировщика: {e}")
+
+# Запуск Flask-сервера
+if __name__ == "__main__":
+    # Инициализация базы данных и планировщика (если нужно)
+    init_database()
+    add_missing_columns()
+    run_scheduler()  # ⚠️ Осторожно: этот цикл может мешать Flask
+
+    port = int(os.environ.get('PORT', 10000))
+    app.run(host='0.0.0.0', port=port)
 
 
 if __name__ == "__main__":
