@@ -529,7 +529,7 @@ def get_weather(city="Moscow", is_default_city=False):
 
 
 # Функция получения новостей с обработкой ошибок
-def get_news(api_key=NEWS_API, lang="ru", max_articles=1):
+def get_news(api_key=os.environ.get('NEWS_API'), lang="ru", max_articles=1):
     try:
         base_url = "https://gnews.io/api/v4/top-headlines"
         params = {
