@@ -34,6 +34,10 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+print("BOT_TOKEN:", os.environ.get('BOT_TOKEN'))
+print("OPENWEATHER_API_KEYS:", os.environ.get('OPENWEATHER_API_KEYS'))
+print("NEWS_API:", os.environ.get('NEWS_API'))
+
 # Перехват необработанных исключений
 def log_error(exc_type, exc_value, exc_traceback):
     logger.error("Необработанное исключение:", exc_info=(exc_type, exc_value, exc_traceback))
@@ -53,9 +57,6 @@ except Exception as e:
     logger.error(f"Ошибка инициализации бота: {e}")
     raise
 
-print("BOT_TOKEN:", os.environ.get('BOT_TOKEN'))
-print("OPENWEATHER_API_KEYS:", os.environ.get('OPENWEATHER_API_KEYS'))
-print("NEWS_API:", os.environ.get('NEWS_API'))
 
 # API ключи для сервисов
 WEATHER_API_KEYS = os.environ.get('OPENWEATHER_API_KEYS').split(',')

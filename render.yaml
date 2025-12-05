@@ -1,10 +1,15 @@
-# render.yaml
 services:
   - type: web
-    name: my-telegram-bot
+    name: your-bot-name
     runtime: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python main.py"
     envVars:
       - key: BOT_TOKEN
         sync: false
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "python main.py"
+      - key: OPENWEATHER_API_KEYS
+        sync: false
+      - key: NEWS_API
+        sync: false
+      - key: RENDER_EXTERNAL_URL
+        value: https://telegrambot-9s8l.onrender.com/
