@@ -3,7 +3,6 @@ import telebot
 from telebot import types
 import datetime
 import requests
-import schedule
 import time
 import threading
 import os
@@ -19,6 +18,10 @@ from urllib3.util.retry import Retry
 from flask import Flask, request
 from dotenv import load_dotenv
 load_dotenv()  # загружает переменные из .env
+from datetime import datetime, timezone, timedelta
+
+# Определите Московский часовой пояс
+MOSCOW_TZ = timezone(timedelta(hours=3))  # MSK = UTC+3
 
 # Создаём Flask-приложение
 app = Flask(__name__)
@@ -1601,7 +1604,9 @@ def echo_message(message):
 # Функция отправки утренних сообщений
 def send_scheduled_messages():
     try:
-        current_time = datetime.now().strftime("%H:%M")
+        # Получаем текущее время в Москве
+        moscow_now = datetime.now(MOSCOW_TZ)
+        current_time = moscow_now.strftime("%H:%M")
         users = get_all_users_for_notification(current_time)
 
         if not users:
@@ -1623,32 +1628,6 @@ def send_scheduled_messages():
                 logger.error(f"Ошибка при отправке утреннего сообщения пользователю {user_id}: {e}")
     except Exception as e:
         logger.error(f"Ошибка при выполнении запланированных отправок: {e}")
-
-
-# Функция для планировщика
-def schedule_checker():
-    while True:
-        try:
-            schedule.run_pending()
-            time.sleep(30)  # Проверка каждые 30 секунд
-        except Exception as e:
-            logger.error(f"Ошибка в планировщике: {e}")
-            time.sleep(60)  # При ошибке подождем дольше
-
-
-# Инициализация планировщика
-def run_scheduler():
-    try:
-        # Проверка каждую минуту для отправки сообщений
-        schedule.every().minute.at(":00").do(send_scheduled_messages)
-
-        schedule_thread = threading.Thread(target=schedule_checker)
-        schedule_thread.daemon = True  # Позволяет программе завершиться, когда основной поток завершается
-        schedule_thread.start()
-
-        logger.info("Планировщик успешно запущен")
-    except Exception as e:
-        logger.error(f"Ошибка при запуске планировщика: {e}")
 
 
 # Webhook endpoint — сюда Telegram будет присылать обновления
@@ -1688,7 +1667,6 @@ if __name__ == "__main__":
     # Инициализация базы данных и планировщика (если нужно)
     init_database()
     add_missing_columns()
-    run_scheduler()  # ⚠️ Осторожно: этот цикл может мешать Flask
 
     port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port)
