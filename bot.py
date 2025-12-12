@@ -1671,17 +1671,17 @@ def set_webhook():
     result = bot.set_webhook(url=webhook_url)
     return f"Webhook set: {result}, URL: {webhook_url}"
 
-# Убедитесь, что run_scheduler() НЕ содержит бесконечный цикл в основном потоке
-# А использует отдельный поток, как в исходном коде:
-
-def run_scheduler():
+@app.route("/send_morning", methods=["GET"])
+def trigger_morning_message():
+    token = request.args.get("token")
+    if token != os.environ.get("CRON_TOKEN"):
+        return "Unauthorized", 403
     try:
-        schedule.every().minute.at(":00").do(send_scheduled_messages)
-        schedule_thread = threading.Thread(target=schedule_checker, daemon=True)
-        schedule_thread.start()
-        logger.info("Планировщик успешно запущен")
+        send_scheduled_messages()
+        return "✅ Утренние сообщения отправлены", 200
     except Exception as e:
-        logger.error(f"Ошибка при запуске планировщика: {e}")
+        logger.error(f"Ошибка при ручной отправке: {e}")
+        return f"❌ Ошибка: {str(e)}", 500
 
 # Запуск Flask-сервера
 if __name__ == "__main__":
