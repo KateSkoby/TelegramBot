@@ -192,7 +192,7 @@ def add_user(user_id, chat_id, username, first_name, last_name):
             )
             # ✅ Полный INSERT с явным указанием всех колонок
             cursor.execute("""
-                INSERT INTO settings (
+                INSERT OR IGNORE INTO settings (
                     user_id, notification_time, weather, social_media, reminders,
                     news, motivation, quotes, self_analysis, horoscope,
                     city, news_category, zodiac_sign
