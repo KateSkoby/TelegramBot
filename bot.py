@@ -743,6 +743,11 @@ def send_welcome(message):
             "😔 Произошла ошибка при запуске бота. Пожалуйста, попробуйте позже или обратитесь к администратору."
         )
 
+@bot.message_handler(commands=['mysettings'])
+def show_my_settings(message):
+    user_id = message.from_user.id
+    settings = get_user_settings(user_id)
+    bot.send_message(message.chat.id, str(settings))
 
 @bot.message_handler(commands=['help'])
 def send_help(message):
