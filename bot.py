@@ -163,10 +163,14 @@ def add_user(user_id, chat_id, username, first_name, last_name):
                 (user_id, chat_id, username, first_name, last_name)
             )
             # Добавляем настройки по умолчанию
-            cursor.execute(
-                "INSERT INTO settings (user_id) VALUES (?)",
-                (user_id,)
-            )
+            cursor.execute("""
+                INSERT INTO settings (
+                    user_id, notification_time, weather, social_media, reminders,
+                    news, motivation, quotes, self_analysis, horoscope,
+                    city, news_category, zodiac_sign
+                ) VALUES (?, '09:00', 1, 1, 1, 0, 0, 0, 0, 0, 'Moscow', 'general', 'general')
+                ON CONFLICT(user_id) DO NOTHING;
+            """, (user_id,))
             conn.commit()
             logger.info(f"Добавлен новый пользователь: {user_id} ({username})")
 
@@ -184,40 +188,35 @@ def get_user_settings(user_id):
     try:
         conn = sqlite3.connect(DB_NAME)
         cursor = conn.cursor()
-
         cursor.execute("SELECT * FROM settings WHERE user_id = ?", (user_id,))
         settings_row = cursor.fetchone()
-
         if not settings_row:
-            # Если настройки не найдены, создаем их по умолчанию
-            cursor.execute(
-                "INSERT INTO settings (user_id) VALUES (?)",
-                (user_id,)
-            )
+            # Создаём полную запись, если её нет
+            cursor.execute("""
+                INSERT INTO settings (
+                    user_id, notification_time, weather, social_media, reminders,
+                    news, motivation, quotes, self_analysis, horoscope,
+                    city, news_category, zodiac_sign
+                ) VALUES (?, '09:00', 1, 1, 1, 0, 0, 0, 0, 0, 'Moscow', 'general', 'general')
+                ON CONFLICT(user_id) DO NOTHING;
+            """, (user_id,))
             conn.commit()
             cursor.execute("SELECT * FROM settings WHERE user_id = ?", (user_id,))
             settings_row = cursor.fetchone()
-
         # Получаем имена колонок
         cursor.execute("PRAGMA table_info(settings)")
         columns = [col[1] for col in cursor.fetchall()]
-
         conn.close()
-
-        # Создаем словарь настроек
+        # Создаём словарь настроек
         settings = {}
         for i, col in enumerate(columns):
-            # Преобразуем булевы значения из SQLite (0/1) в Python (False/True)
-            if col in ['weather', 'social_media', 'reminders', 'news', 'motivation', 'quotes', 'self_analysis',
-                       'horoscope']:
+            if col in ['weather', 'social_media', 'reminders', 'news', 'motivation', 'quotes', 'self_analysis', 'horoscope']:
                 settings[col] = bool(settings_row[i])
             else:
                 settings[col] = settings_row[i]
-
         return settings
     except sqlite3.Error as e:
         logger.error(f"Ошибка SQLite при получении настроек пользователя {user_id}: {e}")
-        # Возвращаем настройки по умолчанию в случае ошибки
         return {
             'notification_time': '09:00',
             'weather': True,
@@ -229,11 +228,11 @@ def get_user_settings(user_id):
             'self_analysis': False,
             'horoscope': False,
             'city': 'Moscow',
-            'news_category': 'general'
+            'news_category': 'general',
+            'zodiac_sign': 'general'
         }
     except Exception as e:
         logger.error(f"Неизвестная ошибка при получении настроек пользователя {user_id}: {e}")
-        # Возвращаем настройки по умолчанию в случае ошибки
         return {
             'notification_time': '09:00',
             'weather': True,
@@ -245,7 +244,8 @@ def get_user_settings(user_id):
             'self_analysis': False,
             'horoscope': False,
             'city': 'Moscow',
-            'news_category': 'general'
+            'news_category': 'general',
+            'zodiac_sign': 'general'
         }
 
 
@@ -253,48 +253,29 @@ def update_user_setting(user_id, setting_name, setting_value):
     try:
         if setting_name == 'zodiac_sign':
             logger.info(f"Попытка обновления знака зодиака для пользователя {user_id}: {setting_value}")
-
         conn = sqlite3.connect(DB_NAME)
         cursor = conn.cursor()
-
         # Проверяем, существует ли колонка
         cursor.execute("PRAGMA table_info(settings)")
         columns = [column[1] for column in cursor.fetchall()]
-
         if setting_name not in columns:
             logger.error(f"Колонка {setting_name} не существует в таблице settings")
             conn.close()
             return False
-
-        # Проверяем, существует ли пользователь
-        cursor.execute("SELECT user_id FROM settings WHERE user_id = ?", (user_id,))
-        user_settings = cursor.fetchone()
-
-        result = False  # Инициализируем result здесь
-
-        if user_settings:
-            # Обновляем настройку
-            query = f"UPDATE settings SET {setting_name} = ? WHERE user_id = ?"
-            cursor.execute(query, (setting_value, user_id))
-            conn.commit()
-            logger.info(f"Обновлена настройка {setting_name}={setting_value} для пользователя {user_id}")
-            result = True
-        else:
-            # Если настроек нет, создаем их
-            query = f"INSERT INTO settings (user_id, {setting_name}) VALUES (?, ?)"
-            cursor.execute(query, (user_id, setting_value))
-            conn.commit()
-            logger.info(f"Создана настройка {setting_name}={setting_value} для пользователя {user_id}")
-            result = True
-
-        # Проверка после обновления (только если успешно)
-        if setting_name == 'zodiac_sign' and result:
+        # Гарантируем наличие полной записи через get_user_settings
+        get_user_settings(user_id)  # Это гарантирует, что запись существует
+        # Обновляем настройку
+        query = f"UPDATE settings SET {setting_name} = ? WHERE user_id = ?"
+        cursor.execute(query, (setting_value, user_id))
+        conn.commit()
+        logger.info(f"Обновлена настройка {setting_name}={setting_value} для пользователя {user_id}")
+        # Проверка после обновления (только если обновляем zodiac_sign)
+        if setting_name == 'zodiac_sign':
             cursor.execute("SELECT zodiac_sign FROM settings WHERE user_id = ?", (user_id,))
             current_value = cursor.fetchone()
             logger.info(f"Проверка сохраненного знака зодиака для пользователя {user_id}: {current_value}")
-
         conn.close()
-        return result
+        return True
     except sqlite3.Error as e:
         logger.error(f"Ошибка SQLite при обновлении настройки {setting_name} для пользователя {user_id}: {e}")
         return False
