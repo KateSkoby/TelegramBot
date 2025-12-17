@@ -65,10 +65,10 @@ except Exception as e:
 try:
     bot.set_my_description(
         description="Утренний Феникс - это умный ассистент, который собирает всю важную для тебя информацию в одно сообщение.\n"
-        "Бот ещё находится в разработке~"
+        "Бот ещё находится в разработке."
     )
     bot.set_my_short_description(short_description="Утренний Феникс - это умный ассистент, который собирает всю важную для тебя информацию в одно сообщение.\n"
-        "Бот ещё находится в разработке~")
+        "Бот ещё находится в разработке.")
     logger.info("Описание бота успешно установлено")
 except Exception as e:
     logger.error(f"Не удалось установить описание бота: {e}")
@@ -192,7 +192,7 @@ def add_user(user_id, chat_id, username, first_name, last_name):
             )
             # ✅ Полный INSERT с явным указанием всех колонок
             cursor.execute("""
-                INSERT OR IGNORE INTO settings (
+                INSERT INTO settings (
                     user_id, notification_time, weather, social_media, reminders,
                     news, motivation, quotes, self_analysis, horoscope,
                     city, news_category, zodiac_sign
