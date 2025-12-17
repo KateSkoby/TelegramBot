@@ -61,6 +61,16 @@ except Exception as e:
     logger.error(f"Ошибка инициализации бота: {e}")
     raise
 
+# Устанавливаем описание бота
+try:
+    bot.set_my_description(
+        description="🌅 Утренний Феникс - это умный ассистент, который собирает всю важную для тебя информацию в одно сообщение.\n"
+        "Бот ещё находится в разработке~"
+    )
+    bot.set_my_short_description(short_description="Ваш персональный утренний ассистент")
+    logger.info("Описание бота успешно установлено")
+except Exception as e:
+    logger.error(f"Не удалось установить описание бота: {e}")
 
 # API ключи для сервисов
 WEATHER_API_KEYS = os.environ.get('OPENWEATHER_API_KEYS').split(',')
@@ -68,6 +78,13 @@ WEATHER_API_KEYS = [key.strip() for key in WEATHER_API_KEYS if key.strip()]
 
 # Настройки базы данных
 DB_NAME = "morning_phoenix.db"
+
+def fix_null_notification_times():
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("UPDATE settings SET notification_time = '09:00' WHERE notification_time IS NULL")
+    conn.commit()
+    conn.close()
 
 
 # Создание и инициализация базы данных
@@ -123,6 +140,7 @@ def init_database():
         conn.commit()
         conn.close()
         logger.info("База данных успешно инициализирована")
+        fix_null_notification_times()
     except Exception as e:
         logger.error(f"Ошибка инициализации базы данных: {e}")
         raise
@@ -143,6 +161,7 @@ def add_missing_columns():
             logger.info("Добавлена отсутствующая колонка zodiac_sign в таблицу settings")
 
         conn.close()
+        fix_null_notification_times()
     except Exception as e:
         logger.error(f"Ошибка при добавлении недостающих колонок: {e}")
 
@@ -151,29 +170,22 @@ def add_user(user_id, chat_id, username, first_name, last_name):
     try:
         conn = sqlite3.connect(DB_NAME)
         cursor = conn.cursor()
-
-        # Проверяем, существует ли пользователь
         cursor.execute("SELECT user_id FROM users WHERE user_id = ?", (user_id,))
-        user = cursor.fetchone()
-
-        if not user:
-            # Добавляем пользователя
+        if not cursor.fetchone():
             cursor.execute(
                 "INSERT INTO users (user_id, chat_id, username, first_name, last_name) VALUES (?, ?, ?, ?, ?)",
                 (user_id, chat_id, username, first_name, last_name)
             )
-            # Добавляем настройки по умолчанию
+            # ✅ Полный INSERT с явным указанием всех колонок
             cursor.execute("""
                 INSERT INTO settings (
                     user_id, notification_time, weather, social_media, reminders,
                     news, motivation, quotes, self_analysis, horoscope,
                     city, news_category, zodiac_sign
                 ) VALUES (?, '09:00', 1, 1, 1, 0, 0, 0, 0, 0, 'Moscow', 'general', 'general')
-                ON CONFLICT(user_id) DO NOTHING;
             """, (user_id,))
             conn.commit()
             logger.info(f"Добавлен новый пользователь: {user_id} ({username})")
-
         conn.close()
         return True
     except sqlite3.Error as e:
