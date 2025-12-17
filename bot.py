@@ -54,12 +54,6 @@ sys.excepthook = log_error
 
 # Инициализация бота
 BOT_TOKEN = os.environ.get('BOT_TOKEN')
-try:
-    bot.set_my_commands([
-        telebot.types.BotCommand("/start", "Перезапустить бота")])
-    logger.info("Меню команд бота успешно установлено")
-except Exception as e:
-    logger.error(f"Не удалось установить меню команд: {e}")
 
 try:
     bot = telebot.TeleBot(BOT_TOKEN)
@@ -68,14 +62,20 @@ except Exception as e:
     logger.error(f"Ошибка инициализации бота: {e}")
     raise
 
+try:
+    bot.set_my_commands([
+        telebot.types.BotCommand("/start", "Перезапустить бота")])
+    logger.info("Меню команд бота успешно установлено")
+except Exception as e:
+    logger.error(f"Не удалось установить меню команд: {e}")
+
 # Устанавливаем описание бота
 try:
     bot.set_my_description(
         description="Утренний Феникс - это умный ассистент, который собирает всю важную для тебя информацию в одно сообщение.\n"
-        "Бот ещё находится в разработке."
+        "Бот ещё находится в разработке~"
     )
-    bot.set_my_short_description(short_description="Утренний Феникс - это умный ассистент, который собирает всю важную для тебя информацию в одно сообщение.\n"
-        "Бот ещё находится в разработке.")
+    bot.set_my_short_description(short_description="Ваш персональный утренний ассистент")
     logger.info("Описание бота успешно установлено")
 except Exception as e:
     logger.error(f"Не удалось установить описание бота: {e}")
