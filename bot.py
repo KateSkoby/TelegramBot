@@ -311,10 +311,15 @@ def update_user_setting(user_id, setting_name, setting_value):
         return True
     except sqlite3.Error as e:
         logger.error(f"Ошибка SQLite при обновлении настройки {setting_name} для пользователя {user_id}: {e}")
+        conn.rollback()
         return False
     except Exception as e:
         logger.error(f"Неизвестная ошибка при обновлении настройки {setting_name} для пользователя {user_id}: {e}")
+        conn.rollback()
         return False
+    finally:
+        if conn:
+            conn.close()
 
 
 def add_reminder(user_id, text, date):
