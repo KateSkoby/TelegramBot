@@ -55,6 +55,13 @@ sys.excepthook = log_error
 # Инициализация бота
 BOT_TOKEN = os.environ.get('BOT_TOKEN')
 try:
+    bot.set_my_commands([
+        telebot.types.BotCommand("/start", "Перезапустить бота")])
+    logger.info("Меню команд бота успешно установлено")
+except Exception as e:
+    logger.error(f"Не удалось установить меню команд: {e}")
+
+try:
     bot = telebot.TeleBot(BOT_TOKEN)
     logger.info("Бот успешно инициализирован")
 except Exception as e:
